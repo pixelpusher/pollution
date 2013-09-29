@@ -179,7 +179,7 @@
 		d3.values(regions).forEach( function (region) {
 			var v = parseInt(region.value);
 			if (v < 1 || isNaN(v))
-				v = 0;
+				v = 1; // has to be 1 at least
 			regionData.children.push( { name: region.name, value: v*scaling } );
 		});
 		
@@ -222,8 +222,8 @@
 		//console.log ( nodeData );
 		
 		//remove old nodes
-		//	d3.selectAll(".node").remove();					
-	
+		//d3.selectAll(".node").remove();					
+		//firstTime = true;
 		
 	if (firstTime)
 	{
@@ -251,6 +251,7 @@
 		
 		node.filter(function(d) { return !d.children; }).append("text")
 		    .attr("text-anchor", "middle")
+		    .attr("class", "region-text")
 		    .attr("dy", ".3em")
 		    .text(function(d) { return d.name + ': ' + parseInt(d.value)})
 		    .style('opacity', 0)
@@ -267,17 +268,24 @@
 			var svgData = svg.data([nodeData]);
 			
 			svgData.selectAll("g")
-			.data(pack.nodes)
+			.data(pack.nodes, function(d) { return d.name; }) // need to join on name!
 			.transition()
 			.duration(1200)
 			.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 
 			svgData.selectAll("circle")
-			.data(pack.nodes)
+			.data(pack.nodes, function(d) { return d.name; }) // need to join on name!
 			.transition()
 			.duration(1200)
 			.attr("fill", function (d) { return d3.hsl(d.r/6, 1, 0.8) })
 			.attr("r", function(d) { return d.r } );
+
+			svgData.selectAll("text")
+			.data(pack.nodes, function(d) { return d.name; }) // need to join on name!
+			.text(function(d) { return d.name + ': ' + parseInt(d.value)})
+			.transition()
+			.duration(1200)
+			.style('opacity', function(d) { var o=0; if (parseIn(d.r) > 1) o = 1; return o; } )
 
 		}
 		
