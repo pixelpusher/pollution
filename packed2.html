@@ -5,20 +5,83 @@
 	<script src="js/jquery-1.10.2.min.map" charset="utf-8"></script>	
 	<script src="js/jquery-1.10.2.min.js" charset="utf-8"></script>
 	<script src="js/d3.v3.min.js" charset="utf-8"></script>
-
+	<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css" />
+  	<script src="http://code.jquery.com/ui/1.10.3/jquery-ui.js"></script>
 
 	<style>
+	
+	body {
+		margin: 12px;
+		font-family: arial, sans-serif;
+	}
+	
+	#output>form, #output>form select {
+		font-size: 24px;
+		font-weight: bold;
+	}
+	
+	div.tooltip {   
+		position: absolute;           
+		text-align: left;           
+		width: 240px;               
+		height: 45px;              
+		padding: 6px 8px;             
+		font: 18px sans-serif;
+		background: #fff;   
+		border: 0px;     
+		border-radius: 8px;           
+		pointer-events: none;
+		-webkit-box-shadow: 3px 3px 6px #000;
+		-moz-box-shadow: 3px 3px 6px #000;
+		-o-box-shadow: 3px 3px 6px #000;
+		-ms-box-shadow: 3px 3px 6px #000;
+		box-shadow: 3px 3px 6px #000;
+		filter: alpha(opacity=60);
+		opacity: 0.6;
+	}
+	
+	circle {
+	}
 
 	.link {
 	  stroke: #000;
 	}
 
 	.node {
-	  stroke: #000;
+ 		stroke: #bbb;
+ 		stroke-width: 4px;		
 	}
-	circle {
- 		stroke: #000;
-		fill-opacity: .3;
+	.child
+	{
+ 		fill: #fff;
+ 		fill-opacity: .2;	
+	}
+	
+	circle.americas {
+		fill: #0C24FF;
+	}
+
+	circle.europeeurasia {
+		fill: #E86D0C;
+	}
+
+	circle.middleeast {
+		fill: #AB0CE8;
+	}
+
+	circle.africa {
+		fill: #FFC900;
+	}
+
+	circle.asiapacific {
+		fill: #FF0000;
+	}
+	.region-text {
+ 		stroke-width: 0;
+		font-family: arial, sans-serif;
+		font-size: 12px;
+		font-weight:bold;
+		fill:#fff;
 	}
 	</style>
 
@@ -27,11 +90,12 @@
 	
 	var year = '2009';		// year to display
 	var scaling = 1/15;		// scaling factor for bubbles
-	var width = 4000,		// width and height of the svg to draw 
-		height = 4000;
+	var width  = 2000,		// width and height of the svg to draw 
+		height = 2000;
 		
 	var svg;	// the svg D3 draws to
 	var pack;	// the d3 pack layout
+	var div;
 	var regionsData = {}; // json data to be drawn by the pack layout
 	
 	// these will have .csv added to the end	
@@ -85,7 +149,6 @@
 	
 	
 	window.addEventListener("load", function() {
-		console.log("load");
 		
 		// build years select dropdown form
 		var years = $('#years-dropdown');
@@ -104,7 +167,7 @@
 		      year = $( this ).text();
     		});
 
-    		regionsData = { name: "root", children: [] };
+    		regionsData = { name: "total", children: [] };
     		
     		$.each( loadedFiles, function (index, fn) 
 			{
@@ -114,11 +177,16 @@
 			
 			refreshData( regionsData );
 		});
-		
+				
 		startLoad();
 		
 		// load the data and build graph
 		initData();
+		
+		div = d3.select("#graph").append("div")   
+		    .attr("class", "tooltip")               
+    		.style("opacity", 0);
+
 	
 	}); // end onload
 	
@@ -148,7 +216,7 @@
 //				.sort(d3.descending)
 			.size([width,height]);
 					
-		regionsData = { name: "root", children: [] };
+		regionsData = { name: "total", children: [] };
 		
 		$.each( loadedFiles, function (index, fn) 
 		{
@@ -243,11 +311,34 @@
 		
 		node			
 		  .append("circle")
-		  .attr("class", "node")
-		  .attr("fill", function (d) { return d3.hsl(d.r/6, 1, 0.8) })
-		  .attr("r", 0)
-		  .transition().duration(1200).delay(100)
-		  .attr("r", function(d) { return d.r } );
+		  .attr("class", function(d) { 
+		  	var c = "child";
+		  	
+		  	if (d.children)
+		  	{
+		  		c = d.name;
+		  	}
+		  	return c; 
+		  })
+			//.attr("fill", function (d) { return d3.hsl(d.r/6, 1, 0.8) })
+			.attr("r", 0)
+			.on("mouseover", function(d) {      
+				div.transition()
+					.duration(200)      
+					.style("opacity", .9);      
+				div.html( d.name + ': ' + parseInt(d.value))  
+//					.style("left", (d.x) + "px")     
+//					.style("top", (d.y - 28) + "px");
+					.style("left", (d3.event.pageX) + "px")     
+					.style("top", (d3.event.pageY) + "px");    
+			})                  
+			.on("mouseout", function(d) {       
+				div.transition()        
+					.duration(500)      
+					.style("opacity", 0);   
+			})
+			.transition().duration(1200).delay(100)
+			.attr("r", function(d) { return d.r } );
 		
 		node.filter(function(d) { return !d.children; }).append("text")
 		    .attr("text-anchor", "middle")
@@ -255,6 +346,21 @@
 		    .attr("dy", ".3em")
 		    .text(function(d) { return d.name + ': ' + parseInt(d.value)})
 		    .style('opacity', 0)
+			.on("mouseover", function(d) {      
+				div.transition()
+					.duration(200)      
+					.style("opacity", .9);      
+				div .html( d.name + ': ' + parseInt(d.value))  
+			//		.style("left", (d.x) + "px")     
+			//		.style("top", (d.y - 28) + "px");    
+					.style("left", (d3.event.pageX) + "px")     
+					.style("top", (d3.event.pageY) + "px");    
+			})                  
+			.on("mouseout", function(d) {       
+				div.transition()        
+					.duration(500)      
+					.style("opacity", 0);   
+			})		    
 		    .transition().duration(1200).delay(100)			  
 			.style('opacity', 1);	
 					
@@ -275,29 +381,65 @@
 
 			svgData.selectAll("circle")
 			.data(pack.nodes, function(d) { return d.name; }) // need to join on name!
+			.on("mouseover", function(d) {      
+				div.transition()
+					.duration(200)      
+					.style("opacity", .9);      
+				div .html( d.name + ': ' + parseInt(d.value))  
+			//		.style("left", (d.x) + "px")     
+			//		.style("top", (d.y - 28) + "px");    
+					.style("left", (d3.event.pageX) + "px")     
+					.style("top", (d3.event.pageY) + "px");    
+			})                  
+			.on("mouseout", function(d) {       
+				div.transition()        
+					.duration(500)      
+					.style("opacity", 0);   
+			})
 			.transition()
 			.duration(1200)
-			.attr("fill", function (d) { return d3.hsl(d.r/6, 1, 0.8) })
+			//.attr("fill", function (d) { return d3.hsl(d.r/6, 1, 0.8) })
 			.attr("r", function(d) { return d.r } );
-
+			
 			svgData.selectAll("text")
 			.data(pack.nodes, function(d) { return d.name; }) // need to join on name!
 			.text(function(d) { return d.name + ': ' + parseInt(d.value)})
+			.on("mouseover", function(d) {      
+				div.transition()
+					.duration(200)      
+					.style("opacity", .9);      
+				div .html( d.name + ': ' + parseInt(d.value))  
+			//		.style("left", (d.x) + "px")     
+			//		.style("top", (d.y - 28) + "px");    
+					.style("left", (d3.event.pageX) + "px")     
+					.style("top", (d3.event.pageY) + "px");    
+			})                  
+			.on("mouseout", function(d) {       
+				div.transition()        
+					.duration(500)      
+					.style("opacity", 0);   
+			})
+
 			.transition()
 			.duration(1200)
-			.style('opacity', function(d) { var o=0; if (parseIn(d.r) > 1) o = 1; return o; } )
-
+			.style('opacity', function(d) { var o=0; if (parseIn(d.value) > 1) o = 1; return o; } )
 		}
-		
-		
+				 	
 	}// end refreshdata
+	
+	
 	
 	</script>
 
 </head>
 <body>
+<h1>Daily Oil Consumption by Region and Country in Thousands of Barrels</h1>
+<h3>by pixelpusher <a href="https://twitter.com/evanraskob">http://twitter.com/evanraskob</a>
+ for <a href="http://www.dfuse.com/">dfuse</a></h3>
+<p>using JQuery and <a href="http://d3js.org">D3</a><br/><br/></p>
 <div id="output">
 <form>
+Year:
 <select id="years-dropdown">
 </select>
 </form>
