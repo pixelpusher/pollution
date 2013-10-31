@@ -1,0 +1,8 @@
+Global pollution visualisations for DFuse by pixelpusher.  Please see the license.
+online at http://content.flkr.com/dfuse/co2emissions.html and 
+http://content.flkr.com/dfuse/oilconsumption.html
+
+Uses JQuery and D3.
+
+Statistics from:
+http://www.eia.gov/cfapps/ipdbproject/IEDIndex3.cfm?tid=90&pid=44&aid=8
